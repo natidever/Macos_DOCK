@@ -12,7 +12,7 @@ class DockItem extends StatefulWidget {
     Key? key,
     required this.child,
     this.baseSize = 48.0,
-    this.maxScale = 1.5,
+    this.maxScale = 1.1,
     this.onTap,
     this.label,
     this.isSelected = false,
@@ -77,7 +77,7 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                 ),
               ),
             AnimatedScale(
-              scale: _isHovered ? widget.maxScale : 1.0,
+              scale: _isHovered ? 1.2: 1.0,
               duration: const Duration(milliseconds: 150),
               curve: Curves.easeOutCubic,
               child: AnimatedBuilder(

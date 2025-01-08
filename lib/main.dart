@@ -116,12 +116,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             selectedIndex: _selectedIndex,
             onItemSelected: _handleItemSelected,
-            children: _dockItems.map((item) => Container(
-              decoration: BoxDecoration(
-                color: item.color,
-                borderRadius: BorderRadius.circular(12),
+            children: _dockItems.map((item) => Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: item.color,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(item.icon, color: Colors.white, size: 32),
               ),
-              child: Icon(item.icon, color: Colors.white, size: 32),
             )).toList(),
           ),
         ],

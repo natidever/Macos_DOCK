@@ -11,7 +11,7 @@ class ReorderableDockList extends StatefulWidget {
     Key? key,
     required this.children,
     required this.onReorder,
-    this.itemSpacing = 16.0,
+    this.itemSpacing = 24.0,
     required this.itemWidth,
     this.dragScale = 1.2,
   }) : super(key: key);
@@ -23,11 +23,17 @@ class ReorderableDockList extends StatefulWidget {
 class _ReorderableDockListState extends State<ReorderableDockList> with TickerProviderStateMixin {
   int? _draggedIndex;
   int? _targetIndex;
+  int? _hoveredIndex;
   double? _dragPosition;
+  Offset? _dragOffset;  // Track full drag position
   late List<GlobalKey> _itemKeys;
+  
+  // Proximity threshold for early space creation (half of item width)
+  double get _proximityThreshold => widget.itemWidth * 0.5;
   
   late AnimationController _scaleController;
   late AnimationController _spaceController;
+  late AnimationController _hoverController;
   
   @override
   void initState() {
@@ -39,12 +45,17 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     
     _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 200),
     );
 
     _spaceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
     );
   }
 
@@ -52,11 +63,23 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
   void dispose() {
     _scaleController.dispose();
     _spaceController.dispose();
+    _hoverController.dispose();
     super.dispose();
   }
 
   double _getItemScale(int index) {
-    if (_draggedIndex == null || _targetIndex == null) return 1.0;
+    if (_draggedIndex == null || _targetIndex == null) {
+      // Apply hover effect when not dragging
+      if (_hoveredIndex != null) {
+        final distance = (index - _hoveredIndex!).abs();
+        if (distance <= 1) { // Affects current and adjacent items
+          // Very subtle scale based on distance
+          final hoverScale = distance == 0 ? 0.05 : 0.03;
+          return 1.0 + (hoverScale * _hoverController.value);
+        }
+      }
+      return 1.0;
+    }
     
     final distance = (index - _targetIndex!).abs();
     if (distance == 1) {
@@ -71,11 +94,25 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     }
 
     final normalSpacing = widget.itemSpacing;
-    final expandedSpacing = normalSpacing * 8;
+    final expandedSpacing = normalSpacing * 2.5;  // Reduced from 10x to 2.5x for smoother feel
     
     if (index == _targetIndex) {
-      final curvedValue = Curves.easeOutBack.transform(_spaceController.value);
-      return normalSpacing + (expandedSpacing - normalSpacing) * curvedValue;
+      // Calculate proximity factor based on drag position
+      double proximityFactor = 1.0;
+      if (_dragOffset != null) {
+        final targetRenderBox = _itemKeys[index].currentContext?.findRenderObject() as RenderBox?;
+        if (targetRenderBox != null) {
+          final targetCenter = targetRenderBox.localToGlobal(
+            Offset(targetRenderBox.size.width / 2, targetRenderBox.size.height / 2),
+          );
+          final distance = (_dragOffset! - targetCenter).distance;
+          // Smoothly interpolate spacing based on distance
+          proximityFactor = (1.0 - (distance / _proximityThreshold)).clamp(0.0, 1.0);
+        }
+      }
+      
+      final curvedValue = Curves.easeOutCubic.transform(_spaceController.value);
+      return normalSpacing + (expandedSpacing - normalSpacing) * curvedValue * proximityFactor;
     }
     
     return normalSpacing;
@@ -107,36 +144,84 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
   }
 
   Widget _buildDraggableItem(int index, Widget child) {
-    return Draggable<int>(
-      data: index,
-      feedback: Transform.scale(
-        scale: widget.dragScale,
-        child: Material(
-          color: Colors.transparent,
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _hoveredIndex = index);
+        _hoverController.forward();
+      },
+      onExit: (_) {
+        setState(() => _hoveredIndex = null);
+        _hoverController.reverse();
+      },
+      child: Draggable<int>(
+        data: index,
+        feedback: Transform.scale(
+          scale: widget.dragScale,
+          child: Material(
+            color: Colors.transparent,
+            child: child,
+          ),
+        ),
+        childWhenDragging: const SizedBox(),
+        onDragStarted: () {
+          setState(() {
+            _draggedIndex = index;
+            _hoveredIndex = null;
+          });
+        },
+        onDragEnd: (_) {
+          setState(() {
+            _draggedIndex = null;
+            _targetIndex = null;
+            _dragPosition = null;
+            _dragOffset = null;
+          });
+          _spaceController.reverse();
+        },
+        onDragUpdate: (details) {
+          setState(() {
+            _dragPosition = details.localPosition.dx;
+            _dragOffset = details.globalPosition;
+            
+            // Find nearest target based on proximity
+            if (_draggedIndex != null) {
+              RenderBox? nearestTarget;
+              int? nearestIndex;
+              double minDistance = double.infinity;
+              
+              for (int i = 0; i < _itemKeys.length; i++) {
+                if (i == _draggedIndex) continue;
+                
+                final itemBox = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+                if (itemBox != null) {
+                  final itemCenter = itemBox.localToGlobal(
+                    Offset(itemBox.size.width / 2, itemBox.size.height / 2),
+                  );
+                  final distance = (_dragOffset! - itemCenter).distance;
+                  
+                  if (distance < minDistance && distance < _proximityThreshold) {
+                    minDistance = distance;
+                    nearestTarget = itemBox;
+                    nearestIndex = i;
+                  }
+                }
+              }
+              
+              if (nearestIndex != null && nearestIndex != _targetIndex) {
+                setState(() => _targetIndex = nearestIndex);
+                _scaleController.forward(from: 0.0);
+                _spaceController.forward(from: _spaceController.value);
+              }
+            }
+          });
+        },
+        child: Visibility(
+          visible: _draggedIndex != index,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: true,
           child: child,
         ),
-      ),
-      childWhenDragging: const SizedBox(),
-      onDragStarted: () {
-        setState(() => _draggedIndex = index);
-      },
-      onDragEnd: (_) {
-        setState(() {
-          _draggedIndex = null;
-          _targetIndex = null;
-          _dragPosition = null;
-        });
-        _spaceController.reverse();
-      },
-      onDragUpdate: (details) {
-        setState(() => _dragPosition = details.localPosition.dx);
-      },
-      child: Visibility(
-        visible: _draggedIndex != index,
-        maintainState: true,
-        maintainAnimation: true,
-        maintainSize: true,
-        child: child,
       ),
     );
   }
@@ -145,7 +230,8 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     return DragTarget<int>(
       builder: (context, candidateData, rejectedData) {
         return TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
           tween: Tween<double>(
             begin: 0.0,
             end: _getItemOffset(index),
@@ -155,7 +241,7 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
               offset: Offset(offset, 0),
               child: AnimatedScale(
                 scale: _getItemScale(index),
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 child: child,
               ),
@@ -192,7 +278,8 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
       if (i > 0) {
         items.add(
           TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 150),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
             tween: Tween<double>(
               begin: widget.itemSpacing,
               end: _getSpacing(i - 1),

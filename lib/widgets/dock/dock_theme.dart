@@ -13,7 +13,7 @@ class DockTheme {
     this.backgroundColor = Colors.black,
     this.backgroundOpacity = 0.2,
     this.baseIconSize = 48.0,
-    this.maxIconScale = 1.5,
+    this.maxIconScale = 1.0,
     this.borderRadius = 16.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.spacing = 8.0,

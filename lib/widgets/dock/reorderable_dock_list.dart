@@ -25,15 +25,22 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
   int? _targetIndex;
   int? _hoveredIndex;
   double? _dragPosition;
-  Offset? _dragOffset;  // Track full drag position
+  Offset? _dragOffset;
   late List<GlobalKey> _itemKeys;
   
-  // Proximity threshold for early space creation (half of item width)
-  double get _proximityThreshold => widget.itemWidth * 0.5;
+  // Track the release animation state
+  int? _releasedIndex;
+  Offset? _releaseStartPosition;
+  Offset? _releaseEndPosition;
+  
+  // Track current positions of items for smooth animation
+  final Map<int, Offset> _itemPositions = {};
+  bool _isReordering = false;
   
   late AnimationController _scaleController;
   late AnimationController _spaceController;
   late AnimationController _hoverController;
+  late AnimationController _releaseController;
   
   @override
   void initState() {
@@ -45,18 +52,33 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     
     _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 800), // Increased from 200ms
     );
 
     _spaceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 1000), // Increased from 300ms
     );
 
     _hoverController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 400), // Increased from 150ms
     );
+    
+    _releaseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200), // Increased from 600ms
+    )..addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _releasedIndex = null;
+          _releaseStartPosition = null;
+          _releaseEndPosition = null;
+          _isReordering = false;
+          _itemPositions.clear();
+        });
+      }
+    });
   }
 
   @override
@@ -64,6 +86,7 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     _scaleController.dispose();
     _spaceController.dispose();
     _hoverController.dispose();
+    _releaseController.dispose();
     super.dispose();
   }
 
@@ -107,7 +130,7 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
           );
           final distance = (_dragOffset! - targetCenter).distance;
           // Smoothly interpolate spacing based on distance
-          proximityFactor = (1.0 - (distance / _proximityThreshold)).clamp(0.0, 1.0);
+          proximityFactor = (1.0 - (distance / (widget.itemWidth * 0.5))).clamp(0.0, 1.0);
         }
       }
       
@@ -143,6 +166,15 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     return offset;
   }
 
+  void _updateItemPositions() {
+    for (int i = 0; i < widget.children.length; i++) {
+      final box = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+      if (box != null) {
+        _itemPositions[i] = box.localToGlobal(Offset.zero);
+      }
+    }
+  }
+
   Widget _buildDraggableItem(int index, Widget child) {
     return MouseRegion(
       onEnter: (_) {
@@ -169,13 +201,28 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
             _hoveredIndex = null;
           });
         },
-        onDragEnd: (_) {
+        onDragEnd: (details) {
+          // Capture the release position and target for smooth animation
+          if (_targetIndex != null && _dragOffset != null) {
+            final targetBox = _itemKeys[_targetIndex!].currentContext?.findRenderObject() as RenderBox?;
+            if (targetBox != null) {
+              final targetPosition = targetBox.localToGlobal(Offset.zero);
+              setState(() {
+                _releasedIndex = _draggedIndex;
+                _releaseStartPosition = _dragOffset;
+                _releaseEndPosition = targetPosition;
+              });
+              _releaseController.forward(from: 0.0);
+            }
+          }
+          
           setState(() {
             _draggedIndex = null;
             _targetIndex = null;
             _dragPosition = null;
             _dragOffset = null;
           });
+          
           _spaceController.reverse();
         },
         onDragUpdate: (details) {
@@ -199,7 +246,7 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
                   );
                   final distance = (_dragOffset! - itemCenter).distance;
                   
-                  if (distance < minDistance && distance < _proximityThreshold) {
+                  if (distance < minDistance && distance < (widget.itemWidth * 0.5)) {
                     minDistance = distance;
                     nearestTarget = itemBox;
                     nearestIndex = i;
@@ -230,22 +277,50 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
     return DragTarget<int>(
       builder: (context, candidateData, rejectedData) {
         return TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 1000), // Increased from 300ms
           curve: Curves.easeOutCubic,
           tween: Tween<double>(
             begin: 0.0,
             end: _getItemOffset(index),
           ),
           builder: (context, offset, child) {
-            return Transform.translate(
+            Widget result = Transform.translate(
               offset: Offset(offset, 0),
               child: AnimatedScale(
                 scale: _getItemScale(index),
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 800), // Increased from 200ms
                 curve: Curves.easeOutCubic,
                 child: child,
               ),
             );
+
+            if (_isReordering && _itemPositions.containsKey(index)) {
+              final startOffset = _itemPositions[index]!;
+              final box = _itemKeys[index].currentContext?.findRenderObject() as RenderBox?;
+              if (box != null) {
+                final currentOffset = box.localToGlobal(Offset.zero);
+                final diffOffset = currentOffset - startOffset;
+                
+                result = TweenAnimationBuilder<Offset>(
+                  key: ValueKey('reorder_$index'),
+                  duration: const Duration(milliseconds: 1200), // Increased from 600ms
+                  curve: Curves.easeOutCubic,
+                  tween: Tween<Offset>(
+                    begin: -diffOffset,
+                    end: Offset.zero,
+                  ),
+                  builder: (context, animOffset, child) {
+                    return Transform.translate(
+                      offset: animOffset,
+                      child: child,
+                    );
+                  },
+                  child: result,
+                );
+              }
+            }
+            
+            return result;
           },
           child: child,
         );
@@ -263,9 +338,16 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
         _spaceController.reverse();
       },
       onAccept: (draggedIndex) {
-        final newIndex = index;
-        if (draggedIndex != newIndex) {
-          widget.onReorder(draggedIndex, newIndex);
+        if (draggedIndex != index) {
+          // Capture current positions before reordering
+          _updateItemPositions();
+          setState(() => _isReordering = true);
+          
+          // Perform reorder with animation
+          widget.onReorder(draggedIndex, index);
+          
+          // Start release animation
+          _releaseController.forward(from: 0.0);
         }
       },
     );
@@ -278,7 +360,7 @@ class _ReorderableDockListState extends State<ReorderableDockList> with TickerPr
       if (i > 0) {
         items.add(
           TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 1000), // Increased from 300ms
             curve: Curves.easeOutCubic,
             tween: Tween<double>(
               begin: widget.itemSpacing,

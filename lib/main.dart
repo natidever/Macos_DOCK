@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'dart:ui' as ui; // Add this line
 import 'widgets/dock/dock.dart';
 import 'widgets/dock/dock_theme.dart';
 
@@ -38,11 +40,15 @@ class DockItemData {
   /// Color of the dock item.
   final Color color;
 
+  /// Image path of the dock item.
+  final String imagePath;
+
   /// Creates a new [DockItemData] instance.
   const DockItemData({
     required this.icon,
     required this.label,
     required this.color,
+    required this.imagePath,
   });
 }
 
@@ -62,29 +68,34 @@ class _HomeScreenState extends State<HomeScreen> {
   /// List of dock items with their respective icons, labels, and colors.
   final List<DockItemData> _dockItems = const [
     DockItemData(
-      icon: Icons.home,
-      label: 'Home',
+      icon: Icons.folder,
+      label: 'Finder',
       color: Colors.blue,
+      imagePath: 'assets/icons/happy_mac.png',
     ),
     DockItemData(
-      icon: Icons.search,
-      label: 'Search',
-      color: Colors.green,
+      icon: Icons.web,
+      label: 'Safari',
+      color: Colors.blue,
+      imagePath: 'assets/icons/safari.png',
     ),
     DockItemData(
-      icon: Icons.favorite,
-      label: 'Favorites',
-      color: Colors.red,
+      icon: Icons.music_note,
+      label: 'Music',
+      color: Colors.pink,
+      imagePath: 'assets/icons/apple_music.png',
     ),
     DockItemData(
-      icon: Icons.settings,
-      label: 'Settings',
-      color: Colors.purple,
-    ),
-    DockItemData(
-      icon: Icons.person,
-      label: 'Profile',
+      icon: Icons.calendar_today,
+      label: 'Calendar',
       color: Colors.orange,
+      imagePath: 'assets/icons/calander.png',
+    ),
+    DockItemData(
+      icon: Icons.web,
+      label: 'Chrome',
+      color: Colors.blue,
+      imagePath: 'assets/icons/chrome.png',
     ),
   ];
 
@@ -98,34 +109,87 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
+          // Wallpaper
+          Image.asset(
+            'assets/images/wallapper.jpg',  // Matches pubspec.yaml
+            fit: BoxFit.cover,
+          ),
+          
           Center(
             child: Text(
               _selectedIndex != null
                   ? 'Selected: ${_dockItems[_selectedIndex!].label}'
                   : 'Click a dock item!',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
             ),
           ),
-          Dock(
-            theme: const DockTheme(
-              baseIconSize: 56,
-              maxIconScale: 1.8,
-              borderRadius: 24,
-              backgroundOpacity: 0.25,
-            ),
-            selectedIndex: _selectedIndex,
-            onItemSelected: _handleItemSelected,
-            children: _dockItems.map((item) => Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: item.color,
-                  borderRadius: BorderRadius.circular(12),
+
+          // Dock with glassmorphic effect
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.5,
+                    height: 60, // Increased container height
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Dock(
+                        theme: const DockTheme(
+                          baseIconSize: 54, // Increased from 48
+                          maxIconScale: 1.6,
+                          borderRadius: 20,
+                          backgroundOpacity: 0,
+                        ),
+                        selectedIndex: _selectedIndex,
+                        onItemSelected: _handleItemSelected,
+                        children: _dockItems.map((item) => SizedBox(
+                          height: 54, // Match new baseIconSize
+                          width: 54,  // Square aspect ratio
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 6.0), // Increased spacing
+                            child: Image.asset(
+                              item.imagePath,
+                              width: 48, // Slightly smaller than container for proper spacing
+                              height: 48,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+                    ),
+                  ),
                 ),
-                child: Icon(item.icon, color: Colors.white, size: 32),
               ),
-            )).toList(),
+            ),
           ),
         ],
       ),

@@ -55,12 +55,12 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
           _triggerBounceAnimation();
           widget.onTap?.call();
         },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
             if (widget.label != null && _isHovered)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+              Positioned(
+                bottom: widget.baseSize + 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -77,7 +77,7 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                 ),
               ),
             AnimatedScale(
-              scale: _isHovered ? 1.2: 1.0,
+              scale: _isHovered ? widget.maxScale : 1.0,
               duration: const Duration(milliseconds: 150),
               curve: Curves.easeOutCubic,
               child: AnimatedBuilder(
@@ -95,14 +95,14 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                   width: widget.baseSize,
                   height: widget.baseSize,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: widget.isSelected
                         ? [
                             BoxShadow(
-                              color: Theme.of(context).primaryColor.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            )
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
                           ]
                         : null,
                   ),

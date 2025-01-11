@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: BackdropFilter(
                   filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
+                    width: MediaQuery.of(context).size.width * 0.34,
                     height: 60, // Increased container height
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
@@ -172,8 +172,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         selectedIndex: _selectedIndex,
                         onItemSelected: _handleItemSelected,
                         children: _dockItems.map((item) => SizedBox(
-                          height: 54, // Match new baseIconSize
-                          width: 54,  // Square aspect ratio
+                          height: 88, // Match new baseIconSize
+                          width: 84,  // Square aspect ratio
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 6.0), // Increased spacing
                             child: Image.asset(

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:ui' as ui; // Add this line
@@ -16,6 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         brightness: Brightness.light,
@@ -61,9 +64,30 @@ class HomeScreen extends StatefulWidget {
 }
 
 /// State of the [HomeScreen] used to manipulate the [_selectedIndex].
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   /// Index of the selected dock item.
   int? _selectedIndex;
+  late AnimationController _bubbleController;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bubbleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..addListener(() {
+        if (_isHovered && _bubbleController.value >= 0.95) {
+          _bubbleController.repeat();
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _bubbleController.dispose();
+    super.dispose();
+  }
 
   /// List of dock items with their respective icons, labels, and colors.
   final List<DockItemData> _dockItems = const [
@@ -145,32 +169,60 @@ class _HomeScreenState extends State<HomeScreen> {
                     alignment: Alignment.center,
                     children: [
                       // Background container with glass effect
-                      ClipRRect(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(15),
-                        ),
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Container(
-                            width: MediaQuery.of(context).size.width * 0.5,
-                            height: 70, // Smaller container height
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(15),
-                                topRight: Radius.circular(15),
-                              ),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 10,
-                                  spreadRadius: 0,
+                      MouseRegion(
+                        onEnter: (_) {
+                          setState(() => _isHovered = true);
+                          _bubbleController.forward();
+                        },
+                        onExit: (_) {
+                          setState(() => _isHovered = false);
+                          _bubbleController.reset();
+                        },
+                        child: AnimatedBuilder(
+                          animation: _bubbleController,
+                          builder: (context, child) {
+                            final value = _bubbleController.value;
+                            final sineValue = sin(value * pi * 2);
+                            final cosValue = cos(value * pi * 2);
+
+                            return Transform(
+                              transform: Matrix4.identity()
+                                ..translate(
+                                  cosValue * 0.5,
+                                  sineValue * 0.5,
+                                )
+                                ..rotateZ(sineValue * 0.005),
+                              child: child,
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                              child: Container(
+                                width: MediaQuery.of(context).size.width * 0.5,
+                                height: 70, // Smaller container height
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(15),
+                                    topRight: Radius.circular(15),
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 10,
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -179,29 +231,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       ClipRect(
                         child: OverflowBox(
                           maxHeight:
-                              100, // Allow icons to be larger than container
+                              80, // Allow icons to be larger than container
                           child: Dock(
                             theme: const DockTheme(
                               baseIconSize: 100, // Keep large icon size
                               maxIconScale: 1.2,
                               borderRadius: 20,
                               backgroundOpacity: 0,
-                              spacing: 1,
+                              spacing: 2,
                               padding:
                                   EdgeInsets.only(top: 4, left: 8, right: 8),
                             ),
                             selectedIndex: _selectedIndex,
                             onItemSelected: _handleItemSelected,
                             children: _dockItems
-                                .map((item) => Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        child: Image.asset(
-                                          item.imagePath,
-                                          width: 20,
-                                          height: 20,
-                                          fit: BoxFit.contain,
-                                        ),
+                                .map((item) => Container(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Image.asset(
+                                        item.imagePath,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.contain,
                                       ),
                                     ))
                                 .toList(),

@@ -1,16 +1,34 @@
-# smart_dok_flutter_engineering_test
 
-A new Flutter project.
+## 🎯 Key Features in Detail
 
-## Getting Started
+1. **Fluid Animation System**
+   - Proximity-based scaling
+   - Smooth transitions
+ 
 
-This project is a starting point for a Flutter application.
+2. **Glassmorphic Effects**
+   - Backdrop filter blur
+   - Border highlights
 
-A few resources to get you started if this is your first Flutter project:
+3. **Interaction Handling**
+   - Multi-touch support
+   - Gesture recognition
+   - Smooth drag and drop
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by Apple's macOS dock
+- Flutter animation system
+- Community feedback and contributions
+
+---
+
+<p align="center">
+  Made with ❤️ by Natnael Sisay
+</p>

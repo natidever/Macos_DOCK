@@ -12,11 +12,11 @@ class DockTheme {
   const DockTheme({
     this.backgroundColor = Colors.black,
     this.backgroundOpacity = 0.2,
-    this.baseIconSize = 48.0,
-    this.maxIconScale = 1.0,
+    this.baseIconSize = 80.0,
+    this.maxIconScale = 1.2,
     this.borderRadius = 16.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    this.spacing = 8.0,
+    this.spacing = 12.0,
   });
 
   DockTheme copyWith({

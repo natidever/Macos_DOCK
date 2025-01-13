@@ -11,7 +11,7 @@ class ReorderableDockList extends StatefulWidget {
     Key? key,
     required this.children,
     required this.onReorder,
-    this.itemSpacing = 24.0,
+    this.itemSpacing = 12.0,
     required this.itemWidth,
     this.dragScale = 1.2,
   }) : super(key: key);

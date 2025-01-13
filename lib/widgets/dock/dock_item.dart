@@ -11,8 +11,8 @@ class DockItem extends StatefulWidget {
   const DockItem({
     Key? key,
     required this.child,
-    this.baseSize = 48.0,
-    this.maxScale = 1.1,
+    this.baseSize = 64.0,
+    this.maxScale = 1.2,
     this.onTap,
     this.label,
     this.isSelected = false,
@@ -64,14 +64,22 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     widget.label!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -94,8 +102,12 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                 child: Container(
                   width: widget.baseSize,
                   height: widget.baseSize,
+                  padding: EdgeInsets.all(widget.baseSize * 0.12),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    color: widget.isSelected 
+                        ? Colors.white.withOpacity(0.15)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: widget.isSelected
                         ? [
                             BoxShadow(
@@ -106,7 +118,10 @@ class _DockItemState extends State<DockItem> with SingleTickerProviderStateMixin
                           ]
                         : null,
                   ),
-                  child: widget.child,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: widget.child,
+                  ),
                 ),
               ),
             ),

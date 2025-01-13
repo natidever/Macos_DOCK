@@ -113,83 +113,106 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Wallpaper
           Image.asset(
-            'assets/images/wallapper.jpg',  // Matches pubspec.yaml
+            'assets/images/wallapper.jpg', // Matches pubspec.yaml
             fit: BoxFit.cover,
           ),
-          
-          Center(
-            child: Text(
-              _selectedIndex != null
-                  ? 'Selected: ${_dockItems[_selectedIndex!].label}'
-                  : 'Click a dock item!',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Colors.white,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-            ),
-          ),
+
+          // Center(
+          //   child: Text(
+          //     _selectedIndex != null
+          //         ? 'Selected: ${_dockItems[_selectedIndex!].label}'
+          //         : 'Click a dock item!',
+          //     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          //       color: Colors.white,
+          //       shadows: [
+          //         Shadow(
+          //           color: Colors.black.withOpacity(0.5),
+          //           blurRadius: 4,
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
 
           // Dock with glassmorphic effect
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.34,
-                    height: 60, // Increased container height
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 10,
-                          spreadRadius: 0,
+          Column(
+            children: [
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.8),
+              Expanded(
+                child: Align(
+                  // alignment: Alignment.bottomCenter,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Background container with glass effect
+                      ClipRRect(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(15),
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Dock(
-                        theme: const DockTheme(
-                          baseIconSize: 54, // Increased from 48
-                          maxIconScale: 1.6,
-                          borderRadius: 20,
-                          backgroundOpacity: 0,
-                        ),
-                        selectedIndex: _selectedIndex,
-                        onItemSelected: _handleItemSelected,
-                        children: _dockItems.map((item) => SizedBox(
-                          height: 88, // Match new baseIconSize
-                          width: 84,  // Square aspect ratio
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                           child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 6.0), // Increased spacing
-                            child: Image.asset(
-                              item.imagePath,
-                              width: 48, // Slightly smaller than container for proper spacing
-                              height: 48,
-                              fit: BoxFit.contain,
+                            width: MediaQuery.of(context).size.width * 0.5,
+                            height: 70, // Smaller container height
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 10,
+                                  spreadRadius: 0,
+                                ),
+                              ],
                             ),
                           ),
-                        )).toList(),
+                        ),
                       ),
-                    ),
+                      // Dock with unconstrained height
+                      ClipRect(
+                        child: OverflowBox(
+                          maxHeight:
+                              100, // Allow icons to be larger than container
+                          child: Dock(
+                            theme: const DockTheme(
+                              baseIconSize: 100, // Keep large icon size
+                              maxIconScale: 1.2,
+                              borderRadius: 20,
+                              backgroundOpacity: 0,
+                              spacing: 1,
+                              padding:
+                                  EdgeInsets.only(top: 4, left: 8, right: 8),
+                            ),
+                            selectedIndex: _selectedIndex,
+                            onItemSelected: _handleItemSelected,
+                            children: _dockItems
+                                .map((item) => Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Image.asset(
+                                          item.imagePath,
+                                          width: 20,
+                                          height: 20,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),

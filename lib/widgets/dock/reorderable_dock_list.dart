@@ -22,7 +22,6 @@ class ReorderableDockList extends StatefulWidget {
 
 class _ReorderableDockListState extends State<ReorderableDockList>
     with TickerProviderStateMixin {
-  final pi = 3.14;
   int? _draggedIndex;
   int? _targetIndex;
   int? _hoveredIndex;
